@@ -49,7 +49,7 @@ GLuint loadPPMTexture(const char* filename) {
 }
 const int WINDOW_WIDTH = 600;
 const int WINDOW_HEIGHT = 800;
-float skyColor = 0.8;  // Initial blue sky color
+float skyColor = 0.4;  // Initial blue sky color
 float bannerYOffset = -100;  // 初始牌子与气球的相对位置
 int frameCounter = 0;  // 计数器来跟踪经过的帧数
 bool windowsVisible = true;
@@ -57,6 +57,8 @@ bool windowsActivated = false;
 //bool flowersDrawn = false;
 bool balloonsFlying = false;
 bool fireworksStarted = false;
+bool timerStarted = false;
+
 
 struct Particle {
     float x, y;  // 粒子的位置
@@ -261,15 +263,13 @@ public:
 };
 
 class Balloon {
-//Todo add more detail for balloon such as winds and more beautiful texture
 private:
     float x,y;
     float speed;
     float r, g, b;
     float controlPointOffset;
     bool isHoldingText;
-    float windTime = 0.0f;
-    // 是否拉着字上升
+    float windTime = 0.0f; // 是否拉着字上升
 
 public:
     Balloon(float x, float y, float r, float g, float b, bool isHoldingText = false)
@@ -279,13 +279,25 @@ public:
 
     void update() {
         y += speed;
-        windTime += 0.05f;  // 调整这个值可以改变风的速度
+        windTime += 0.05f;  // 偏移程度
         controlPointOffset = sin(windTime) * 5.0f;  // 调
     }
+
+    void setSpeed(float newSpeed) {
+        speed = newSpeed;
+    }
+
 
     bool holdingText() const {
         return isHoldingText;
     }
+
+    void setColor(float newR, float newG, float newB) {
+        r = newR;
+        g = newG;
+        b = newB;
+    }
+
 
     float getY() const {
         return y;
@@ -296,6 +308,31 @@ public:
     }
 
     void draw() {
+        if (!isHoldingText == true) {
+            //绘制弯曲的绳子
+            glColor3f(0.5, 0.5, 0.5);  // 灰色
+            float controlX = x + controlPointOffset;
+            float controlY = y - 40;  // 控制点
+
+            glBegin(GL_LINE_STRIP);  // 使用GL_LINE_STRIP来绘制连续的线段
+            glVertex2f(x, y);  // 起点
+            // 使用贝塞尔曲线的公式来绘制曲线
+            for (float t = 0; t <= 1; t += 0.01) {
+                float pointX = (1 - t) * (1 - t) * x + 2 * (1 - t) * t * controlX + t * t * x;
+                float pointY = (1 - t) * (1 - t) * y + 2 * (1 - t) * t * controlY + t * t * (y - 80);
+                glVertex2f(pointX, pointY);
+            }
+            glEnd();
+        }
+        else
+        {
+            // 绘制绳子
+            glColor3f(0.5, 0.5, 0.5);  // 灰色
+            glBegin(GL_LINES);
+            glVertex2f(x, y - 30);  // 气球底部
+            glVertex2f(x, y - 80);  // 绳子的末端
+            glEnd();
+        }
         // 绘制气球
         glColor3f(r, g, b);  // 红色
         glBegin(GL_POLYGON);
@@ -308,40 +345,20 @@ public:
     // 绘制高光
         float highlightWidth = 10.0f;  // 高光的宽度
         float highlightHeight = 5.0f;  // 高光的高度
-        float highlightX = x;  // 高光的中心X坐标
-        float highlightY = y + 15.0f;  // 高光的中心Y坐标，稍微偏离气球的中心
+        float highlightX = x;  // 高光X
+        float highlightY = y + 15.0f;  // 高光Y
 
         glBegin(GL_TRIANGLE_FAN);
-        glColor4f(1.0f, 1.0f, 1.0f, 0.6f);  // 高光的中心颜色
-        glVertex2f(highlightX, highlightY);  // 高光的中心点
-        for (int i = 0; i <= 360; i += 10) {  // 以10度为间隔绘制高光的边缘
-            glColor4f(1.0f, 1.0f, 1.0f, 0.0f);  // 高光的边缘颜色（完全透明）
+        glColor4f(1.0f, 1.0f, 1.0f, 0.6f);  // 高光颜色
+        glVertex2f(highlightX, highlightY);  // 高光中心点
+        for (int i = 0; i <= 360; i += 10) {  // 高光的边缘
+            glColor4f(1.0f, 1.0f, 1.0f, 0.0f);  // 高光的边缘颜色
             float degInRad = i * DEG2RAD;
             glVertex2f(highlightX + cos(degInRad) * highlightWidth, highlightY + sin(degInRad) * highlightHeight);
         }
         glEnd();
 
-        // 绘制绳子
-        glColor3f(0.5, 0.5, 0.5);  // 灰色
-        glBegin(GL_LINES);
-        glVertex2f(x, y - 30);  // 气球底部
-        glVertex2f(x, y - 50);  // 绳子的末端
-        glEnd();
-        if (!isHoldingText == true) {
-            //绘制弯曲的绳子
-            float controlX = x + controlPointOffset;
-            float controlY = y - 15;  // 控制点位于气球下方一些的位置
 
-            glBegin(GL_LINE_STRIP);  // 使用GL_LINE_STRIP来绘制连续的线段
-            glVertex2f(x, y);  // 起点
-            // 使用贝塞尔曲线的公式来绘制曲线
-            for (float t = 0; t <= 1; t += 0.01) {
-                float pointX = (1 - t) * (1 - t) * x + 2 * (1 - t) * t * controlX + t * t * x;
-                float pointY = (1 - t) * (1 - t) * y + 2 * (1 - t) * t * controlY + t * t * (y - 30);
-                glVertex2f(pointX, pointY);
-            }
-            glEnd();
-        }
 
 
     }
@@ -477,7 +494,7 @@ void init() {
     // Initialize balloons with random positions and bright colors
     balloons.push_back(Balloon(250, -100, 1.0, 0.0, 0.0, true));  // Left balloon (bright red)
     balloons.push_back(Balloon(350, -100, 1.0, 0.0, 0.0, true));  // Right balloon (bright red)
-    for (int i = 0; i < 10; i++){
+    for (int i = 0; i < 20; i++){
         balloons.push_back({static_cast<float>(rand() % WINDOW_WIDTH), -100,
                             static_cast<float>(rand()) / RAND_MAX,
                             static_cast<float>(rand()) / RAND_MAX,
@@ -490,10 +507,10 @@ void init() {
 
 void display() {
     if (fireworksStarted) {
-        skyColor -= 0.01;  // Gradually darken the sky
+        skyColor -= 0.02;  // Gradually darken the sky
         if (skyColor < 0.0) skyColor = 0.0;
     }
-    glClearColor(0.5, skyColor, 1.0, 1.0);
+    glClearColor(skyColor, skyColor, skyColor, 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
 //    std::cout << "Number of trees: " << trees.size() << std::endl;
     drawGround();
@@ -548,8 +565,52 @@ void display() {
     glutSwapBuffers();
 }
 
+void timer(int) {
+    if (!timerStarted) {
+        return;
+    }
+    frameCounter++;
+
+    // 更新气球
+    for (auto& balloon : balloons) {
+        if (balloon.getY() > WINDOW_HEIGHT) {
+            if (!balloon.holdingText()) {  // 只有不拉着字的气球才重新初始化
+                // 重新初始化气球的位置和颜色
+                balloon.setY(-100);  // 使气球从屏幕底部重新出现
+                balloon.setColor(static_cast<float>(rand()) / RAND_MAX,
+                                 static_cast<float>(rand()) / RAND_MAX,
+                                 static_cast<float>(rand()) / RAND_MAX);  // 设置随机颜色
+            } else {
+                // 如果气球拉着字并且到达屋顶，停止上升
+                balloon.setSpeed(0);
+            }
+        }
+    }
+
+    // 更新烟花
+    for (Firework& firework : fireworks) {
+        firework.update();  // 使用Firework类的update方法更新烟花状态
+
+        // 如果烟花完全淡出，重新初始化
+        if (firework.isFadedOut()) {  //使用Firework类的isFadedOut方法来检查烟花是否已经完全淡出
+            firework.init();  // 使用Firework类的init方法重新初始化烟花
+        }
+    }
+
+    // 每30帧切换一次窗户的可见性
+    if (frameCounter >= 30) {
+        windowsVisible = !windowsVisible;
+        frameCounter = 0;
+    }
+
+    glutPostRedisplay();
+    glutTimerFunc(1000/60, timer, 0);  // 60 FPS
+}
+
 void mouse(int button, int state, int x, int y) {
-    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
+    if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && !timerStarted == true) {
+        timerStarted = true;
+        glutTimerFunc(0, timer, 0);
         balloonsFlying = true;
         windowsActivated = true;
         for (Flower& flower : flowers) {
@@ -559,28 +620,7 @@ void mouse(int button, int state, int x, int y) {
     glutPostRedisplay();
 }
 
-void timer(int) {
-    frameCounter++;
 
-    // 更新烟花
-    for (Firework& firework : fireworks) {
-        firework.update();  // 使用Firework类的update方法更新烟花状态
-
-        // 如果烟花完全淡出，重新初始化
-        if (firework.isFadedOut()) {  // 假设我们在Firework类中定义了一个isFadedOut方法来检查烟花是否已经完全淡出
-            firework.init();  // 使用Firework类的init方法重新初始化烟花
-        }
-    }
-
-    // 每30帧（即0.5秒）切换一次窗户的可见性
-    if (frameCounter >= 30) {
-        windowsVisible = !windowsVisible;
-        frameCounter = 0;
-    }
-
-    glutPostRedisplay();
-    glutTimerFunc(1000/60, timer, 0);  // 60 FPS
-}
 
 
 int main(int argc, char** argv) {
