@@ -224,6 +224,7 @@ private:
     float r, g, b;
     float controlPointOffset;
     bool isHoldingText;
+    float windTime = 0.0f;
     // 是否拉着字上升
 
 public:
@@ -234,7 +235,8 @@ public:
 
     void update() {
         y += speed;
-        controlPointOffset += (rand() % 3 - 1) * 0.1;
+        windTime += 0.05f;  // 调整这个值可以改变风的速度
+        controlPointOffset = sin(windTime) * 5.0f;  // 调
     }
 
     bool holdingText() const {
@@ -259,29 +261,28 @@ public:
         }
         glEnd();
 
-//        // 绘制绳子
-//        if (isHoldingText == true)
-//        {
-//        glColor3f(0.5, 0.5, 0.5);  // 灰色
-//        glBegin(GL_LINES);
-//        glVertex2f(x, y - 30);  // 气球底部
-//        glVertex2f(x, y - 50);  // 绳子的末端
-//        glEnd();
-//        }
-
-        //绘制弯曲的绳子
-        float controlX = x + controlPointOffset;
-        float controlY = y - 15;  // 控制点位于气球下方一些的位置
-
+        // 绘制绳子
+        glColor3f(0.5, 0.5, 0.5);  // 灰色
         glBegin(GL_LINES);
-        glVertex2f(x, y);  // 起点
-        // 使用贝塞尔曲线的公式来绘制曲线
-        for (float t = 0; t <= 1; t += 0.01) {
-            float pointX = (1 - t) * (1 - t) * x + 2 * (1 - t) * t * controlX + t * t * x;
-            float pointY = (1 - t) * (1 - t) * y + 2 * (1 - t) * t * controlY + t * t * (y - 30);
-            glVertex2f(pointX, pointY);
-        }
+        glVertex2f(x, y - 30);  // 气球底部
+        glVertex2f(x, y - 50);  // 绳子的末端
         glEnd();
+        if (!isHoldingText == true) {
+            //绘制弯曲的绳子
+            float controlX = x + controlPointOffset;
+            float controlY = y - 15;  // 控制点位于气球下方一些的位置
+
+            glBegin(GL_LINE_STRIP);  // 使用GL_LINE_STRIP来绘制连续的线段
+            glVertex2f(x, y);  // 起点
+            // 使用贝塞尔曲线的公式来绘制曲线
+            for (float t = 0; t <= 1; t += 0.01) {
+                float pointX = (1 - t) * (1 - t) * x + 2 * (1 - t) * t * controlX + t * t * x;
+                float pointY = (1 - t) * (1 - t) * y + 2 * (1 - t) * t * controlY + t * t * (y - 30);
+                glVertex2f(pointX, pointY);
+            }
+            glEnd();
+        }
+
 
     }
 };
@@ -449,6 +450,9 @@ void display() {
         tree.draw();
     }
 
+    for (Balloon& balloon : balloons) {
+        balloon.update();
+    }
     if (balloonsFlying) {
         for (int i = 0; i < balloons.size(); i++) {
             auto& balloon = balloons[i];
@@ -484,7 +488,6 @@ void display() {
     glutSwapBuffers();
 }
 
-
 void mouse(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         balloonsFlying = true;
@@ -518,8 +521,6 @@ void timer(int) {
     glutPostRedisplay();
     glutTimerFunc(1000/60, timer, 0);  // 60 FPS
 }
-
-
 
 
 int main(int argc, char** argv) {
