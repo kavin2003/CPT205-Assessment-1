@@ -2,7 +2,51 @@
 #include <cmath>
 #include <vector>
 #include <iostream>
+#include <fstream>
+#include <string>
+#include <sstream>
+#define DEG2RAD 0.0174532925
 
+GLuint loadPPMTexture(const char* filename) {
+    std::ifstream file(filename, std::ios::binary);
+    if (!file.is_open()) {
+        std::cerr << "Failed to open PPM file: " << filename << std::endl;
+        return 0;
+    }
+
+    std::string line;
+    std::getline(file, line);  // P6
+    if (line != "P6") {
+        std::cerr << "Not a valid PPM file: " << filename << std::endl;
+        return 0;
+    }
+
+    // Skip comments
+    while (std::getline(file, line) && line[0] == '#');
+
+    std::stringstream dimensions(line);
+    int width, height;
+    dimensions >> width >> height;
+
+    std::getline(file, line);  // Max color value, usually 255
+    int maxColor = std::stoi(line);
+
+    std::vector<unsigned char> data(width * height * 3);
+    file.read(reinterpret_cast<char*>(data.data()), data.size());
+
+    GLuint textureID;
+    glGenTextures(1, &textureID);
+    glBindTexture(GL_TEXTURE_2D, textureID);
+
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data.data());
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+
+    glBindTexture(GL_TEXTURE_2D, 0);
+
+    return textureID;
+}
 const int WINDOW_WIDTH = 600;
 const int WINDOW_HEIGHT = 800;
 float skyColor = 0.8;  // Initial blue sky color
@@ -253,11 +297,27 @@ public:
 
     void draw() {
         // 绘制气球
-        glColor3f(1.0, 0.0, 0.0);  // 红色
+        glColor3f(r, g, b);  // 红色
         glBegin(GL_POLYGON);
         for (int i = 0; i < 360; i += 10) {
             float degInRad = i * 3.14159 / 180;
             glVertex2f(x + cos(degInRad) * 20, y + sin(degInRad) * 30);  // 椭圆形的气球
+        }
+        glEnd();
+
+    // 绘制高光
+        float highlightWidth = 10.0f;  // 高光的宽度
+        float highlightHeight = 5.0f;  // 高光的高度
+        float highlightX = x;  // 高光的中心X坐标
+        float highlightY = y + 15.0f;  // 高光的中心Y坐标，稍微偏离气球的中心
+
+        glBegin(GL_TRIANGLE_FAN);
+        glColor4f(1.0f, 1.0f, 1.0f, 0.6f);  // 高光的中心颜色
+        glVertex2f(highlightX, highlightY);  // 高光的中心点
+        for (int i = 0; i <= 360; i += 10) {  // 以10度为间隔绘制高光的边缘
+            glColor4f(1.0f, 1.0f, 1.0f, 0.0f);  // 高光的边缘颜色（完全透明）
+            float degInRad = i * DEG2RAD;
+            glVertex2f(highlightX + cos(degInRad) * highlightWidth, highlightY + sin(degInRad) * highlightHeight);
         }
         glEnd();
 
