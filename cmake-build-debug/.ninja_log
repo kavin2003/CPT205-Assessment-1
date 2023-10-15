@@ -1,0 +1,18 @@
+# ninja log v5
+0	424	7190744095421109	CPT205_Assessment_1.exe	99ab301d10759cca
+0	773	7190743914429296	CMakeFiles/CPT205_Assessment_1.dir/assessment-1-oop.cpp.obj	1eea8db90b027cd8
+777	1158	7190742537589195	bin/CPT205_Assessment_1.exe	2dfecde15a6d45dc
+0	12	0	clean	9a9d0b3476f75230
+1	147	7190744152420465	build.ninja	49505106b89abb4e
+1	768	7190744638464519	CMakeFiles/CPT205_Assessment_1.dir/assessment-1-oop.cpp.obj	1eea8db90b027cd8
+769	1124	7190744640736150	CPT205_Assessment_1.exe	99ab301d10759cca
+0	806	7190745076976520	CMakeFiles/CPT205_Assessment_1.dir/assessment-1-oop.cpp.obj	1eea8db90b027cd8
+807	1452	7190745082776942	CPT205_Assessment_1.exe	99ab301d10759cca
+0	772	7190747566430934	CMakeFiles/CPT205_Assessment_1.dir/assessment-1-oop.cpp.obj	1eea8db90b027cd8
+773	1132	7190747569037684	CPT205_Assessment_1.exe	99ab301d10759cca
+0	861	7190750323635089	CMakeFiles/CPT205_Assessment_1.dir/assessment-1-oop.cpp.obj	1eea8db90b027cd8
+862	1200	7190750326181160	CPT205_Assessment_1.exe	99ab301d10759cca
+0	795	7190750757328990	CMakeFiles/CPT205_Assessment_1.dir/assessment-1-oop.cpp.obj	1eea8db90b027cd8
+796	1045	7190750759189352	CPT205_Assessment_1.exe	99ab301d10759cca
+1	764	7190752371026998	CMakeFiles/CPT205_Assessment_1.dir/assessment-1-oop.cpp.obj	1eea8db90b027cd8
+765	1203	7190752373897358	CPT205_Assessment_1.exe	99ab301d10759cca
