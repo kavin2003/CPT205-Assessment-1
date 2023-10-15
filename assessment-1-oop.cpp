@@ -14,18 +14,12 @@ bool windowsActivated = false;
 bool balloonsFlying = false;
 bool fireworksStarted = false;
 
-struct Balloon {
-    float x, y;
-    float r, g, b;
-};
-
 struct Particle {
     float x, y;  // 粒子的位置
     float vx, vy;  // 粒子的速度
     float life;  // 粒子的生命周期
     float r, g, b;  // 粒子的颜色
 };
-
 class Firework {
 private:
     float x, y;  // 烟花的起始位置
@@ -145,44 +139,22 @@ class Flower {
 private:
     float x, y;
     float bloomFactor;  // 0表示完全闭合的花苞，1表示完全开放的花
+    bool isBlooming;
 
 public:
-    Flower(float x, float y) : x(x), y(y), bloomFactor(0.0f) {}
+    Flower(float x, float y) : x(x), y(y), bloomFactor(0.0f), isBlooming(false) {}
+
+    void startBlooming() {
+        isBlooming = true;
+    }
 
     void update() {
-        // 假设花朵会随时间慢慢绽放
-        bloomFactor += 0.01f;
-        if (bloomFactor > 1.0f) {
-            bloomFactor = 1.0f;
+        if (isBlooming && bloomFactor < 1.0f) {
+            bloomFactor += 0.005f;  // 调整这个值以改变花朵开放的速度
         }
     }
 
     void draw() const {
-        // 绘制花瓣
-        glColor3f(1.0, 0.5, 1.0);  // 粉红色花瓣
-        for (int petal = 0; petal < 8; petal++) {
-            float angleOffset = petal * 45 * 3.14159 / 180;
-            glBegin(GL_POLYGON);
-            for (int i = 0; i < 360; i += 45) {
-                float theta = i * 3.14159 / 180 + angleOffset;
-                float xOffset = bloomFactor * 20 * cos(theta);
-                float yOffset = bloomFactor * 20 * sin(theta);
-                glVertex2f(x + xOffset, y + yOffset);
-            }
-            glEnd();
-        }
-
-        // 绘制花蕊
-        glColor3f(1.0, 1.0, 0.0);  // 黄色花蕊
-        glBegin(GL_POLYGON);
-        for (int i = 0; i < 360; i += 10) {
-            float theta = i * 3.14159 / 180;
-            float xOffset = bloomFactor * 10 * cos(theta);
-            float yOffset = bloomFactor * 10 * sin(theta);
-            glVertex2f(x + xOffset, y + yOffset);
-        }
-        glEnd();
-
         // 绘制茎
         glColor3f(0.0, 0.5, 0.0);  // 绿色茎
         glBegin(GL_LINES);
@@ -202,8 +174,89 @@ public:
         glVertex2f(x + 5, y - 10);
         glVertex2f(x, y - 20);
         glEnd();
+
+        // 绘制花蕊
+        glColor3f(1.0, 1.0, 0.0);  // 黄色花蕊
+        glBegin(GL_POLYGON);
+        for (int i = 0; i < 360; i += 10) {
+            float theta = i * 3.14159 / 180;
+            float xOffset = bloomFactor * 10 * cos(theta);
+            float yOffset = bloomFactor * 10 * sin(theta);
+            glVertex2f(x + xOffset, y + yOffset);
+        }
+        glEnd();
+
+        if (isBlooming)
+        {
+            // 绘制花蕊
+            glColor3f(1.0, 1.0, 0.0);  // 黄色花蕊
+            glBegin(GL_POLYGON);
+            for (int i = 0; i < 360; i += 10) {
+                float theta = i * 3.14159 / 180;
+                float xOffset = bloomFactor * 10 * cos(theta);
+                float yOffset = bloomFactor * 10 * sin(theta);
+                glVertex2f(x + xOffset, y + yOffset);
+            }
+            glEnd();
+            // 绘制花瓣
+            glColor3f(1.0, 0.5, 1.0);  // 粉红色花瓣
+            for (int petal = 0; petal < 8; petal++) {
+                float angleOffset = petal * 45 * 3.14159 / 180;
+                glBegin(GL_POLYGON);
+                for (int i = 0; i < 360; i += 45) {
+                    float theta = i * 3.14159 / 180 + angleOffset;
+                    float xOffset = bloomFactor * 20 * cos(theta);
+                    float yOffset = bloomFactor * 20 * sin(theta);
+                    glVertex2f(x + xOffset, y + yOffset);
+                }
+                glEnd();
+            }
+
+        }
     }
 };
+
+class Balloon {
+//Todo add more detail for balloon such as winds and more beautiful texture
+private:
+    float x;
+    float speed;
+    float r, g, b;
+    // 是否拉着字上升
+
+public:
+    Balloon(float x, float y, float r, float g, float b, bool isHoldingText = false)
+            : x(x), y(y), r(r), g(g), b(b), isHoldingText(isHoldingText) {
+        speed = isHoldingText ? 2.0f : 1.0f + static_cast<float>(rand() % 3);  // 如果拉着字，速度固定为2.0，否则随机速度
+    }
+
+    void update() {
+        y += speed;
+    }
+
+    void draw() {
+        // 绘制气球
+        glColor3f(1.0, 0.0, 0.0);  // 红色
+        glBegin(GL_POLYGON);
+        for (int i = 0; i < 360; i += 10) {
+            float degInRad = i * 3.14159 / 180;
+            glVertex2f(x + cos(degInRad) * 20, y + sin(degInRad) * 30);  // 椭圆形的气球
+        }
+        glEnd();
+
+        // 绘制绳子
+        glColor3f(0.5, 0.5, 0.5);  // 灰色
+        glBegin(GL_LINES);
+        glVertex2f(x, y - 30);  // 气球底部
+        glVertex2f(x, y - 50);  // 绳子的末端
+        glEnd();
+
+    }
+
+    bool isHoldingText;
+    float y;
+};
+
 
 void drawBuilding() {
     // Main building
@@ -250,23 +303,6 @@ void drawGround() {
     glVertex2i(WINDOW_WIDTH, 0);
     glVertex2i(WINDOW_WIDTH, 100);  // 地面的高度，可以根据需要调整
     glVertex2i(0, 100);
-    glEnd();
-}
-
-void drawBalloon(Balloon balloon) {
-    glColor3f(balloon.r, balloon.g, balloon.b);
-    glBegin(GL_POLYGON);
-    for (int i = 0; i < 360; i++) {
-        float theta = i * 3.142 / 180;
-        glVertex2f(balloon.x + 20 * cos(theta), balloon.y + 30 * sin(theta));
-    }
-    glEnd();
-
-    // Balloon string
-    glColor3f(0.0, 0.0, 0.0);
-    glBegin(GL_LINES);
-    glVertex2i(balloon.x, balloon.y - 10);
-    glVertex2i(balloon.x, balloon.y - 70);
     glEnd();
 }
 
@@ -349,9 +385,9 @@ void init() {
     trees.push_back(Tree(100, 100));
     trees.push_back(Tree(500, 100));
     // Initialize balloons with random positions and bright colors
-    balloons.push_back({250, -100, 1.0, 0.0, 0.0});  // Left balloon (bright red)
-    balloons.push_back({350, -100, 1.0, 0.0, 0.0});  // Right balloon (bright red)
-    for (int i = 0; i < 3; i++){
+    balloons.push_back(Balloon(250, -100, 1.0, 0.0, 0.0, true));  // Left balloon (bright red)
+    balloons.push_back(Balloon(350, -100, 1.0, 0.0, 0.0, true));  // Right balloon (bright red)
+    for (int i = 0; i < 10; i++){
         balloons.push_back({static_cast<float>(rand() % WINDOW_WIDTH), -100,
                             static_cast<float>(rand()) / RAND_MAX,
                             0.0,
@@ -375,29 +411,32 @@ void display() {
 
     // 绘制花朵
     for (Flower& flower : flowers) {
-        flower.update();  // 更新花朵的状态
+        flower.update();
         flower.draw();
     }
     // 绘制树
-    for (const Tree& tree : trees) {
+    for (const Tree& tree : trees)
+    {
         tree.draw();
     }
 
     if (balloonsFlying) {
         for (int i = 0; i < balloons.size(); i++) {
             auto& balloon = balloons[i];
-            drawBalloon(balloon);
-            if (i < 2) {  // Only the first two balloons (attached to the banner) have fixed speed
+            balloon.draw();  // 使用Balloon类的draw方法绘制气球
+
+            if (balloon.isHoldingText) {  // 如果气球拉着字，使用固定速度
                 balloon.y += 2;
             } else {
                 balloon.y += 1 + (rand() % 3);  // Random speed between 1 and 3
             }
         }
+
         if (balloons[0].y + bannerYOffset < 500) {
             drawCenteredText(balloons[0].y + bannerYOffset + 15, "2024 XJTLU Graduation Ceremony");
         } else {
             drawCenteredText(515, "2024 XJTLU Graduation Ceremony");  // Centered on the building top
-            // updateFlowers();  // 这个函数已经被Flower类的update方法替代了
+
             if (!fireworksStarted) {
                 fireworksStarted = true;
             }
@@ -421,6 +460,9 @@ void mouse(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN) {
         balloonsFlying = true;
         windowsActivated = true;
+        for (Flower& flower : flowers) {
+            flower.startBlooming();
+        }
     }
     glutPostRedisplay();
 }
