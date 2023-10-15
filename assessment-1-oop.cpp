@@ -49,7 +49,7 @@ GLuint loadPPMTexture(const char* filename) {
 }
 const int WINDOW_WIDTH = 600;
 const int WINDOW_HEIGHT = 800;
-float skyColor = 0.4;  // Initial blue sky color
+float skyColor = 0.4;  // 初始化浅蓝色天空
 float bannerYOffset = -100;  // 初始牌子与气球的相对位置
 int frameCounter = 0;  // 计数器来跟踪经过的帧数
 bool windowsVisible = true;
@@ -631,6 +631,10 @@ void init() {
 }
 
 void display() {
+    // 更新云朵的位置
+    sky.updateClouds();
+    // 更新星星的位置
+    sky.updateStars();
     if (fireworksStarted) {
         sky.darken();
     }
@@ -712,12 +716,6 @@ void timer(int) {
         }
     }
 
-    // 更新云朵的位置
-    sky.updateClouds();
-
-    // 更新星星的闪烁效果
-    sky.updateStars();
-
     // 更新烟花
     for (Firework& firework : fireworks) {
         firework.update();  // 使用Firework类的update方法更新烟花状态
@@ -750,8 +748,6 @@ void mouse(int button, int state, int x, int y) {
     }
     glutPostRedisplay();
 }
-
-
 
 
 int main(int argc, char** argv) {
