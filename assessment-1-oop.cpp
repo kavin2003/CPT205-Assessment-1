@@ -219,9 +219,11 @@ public:
 class Balloon {
 //Todo add more detail for balloon such as winds and more beautiful texture
 private:
-    float x;
+    float x,y;
     float speed;
     float r, g, b;
+    float controlPointOffset;
+    bool isHoldingText;
     // 是否拉着字上升
 
 public:
@@ -232,6 +234,19 @@ public:
 
     void update() {
         y += speed;
+        controlPointOffset += (rand() % 3 - 1) * 0.1;
+    }
+
+    bool holdingText() const {
+        return isHoldingText;
+    }
+
+    float getY() const {
+        return y;
+    }
+
+    void setY(float newY) {
+        y = newY;
     }
 
     void draw() {
@@ -244,17 +259,31 @@ public:
         }
         glEnd();
 
-        // 绘制绳子
-        glColor3f(0.5, 0.5, 0.5);  // 灰色
+//        // 绘制绳子
+//        if (isHoldingText == true)
+//        {
+//        glColor3f(0.5, 0.5, 0.5);  // 灰色
+//        glBegin(GL_LINES);
+//        glVertex2f(x, y - 30);  // 气球底部
+//        glVertex2f(x, y - 50);  // 绳子的末端
+//        glEnd();
+//        }
+
+        //绘制弯曲的绳子
+        float controlX = x + controlPointOffset;
+        float controlY = y - 15;  // 控制点位于气球下方一些的位置
+
         glBegin(GL_LINES);
-        glVertex2f(x, y - 30);  // 气球底部
-        glVertex2f(x, y - 50);  // 绳子的末端
+        glVertex2f(x, y);  // 起点
+        // 使用贝塞尔曲线的公式来绘制曲线
+        for (float t = 0; t <= 1; t += 0.01) {
+            float pointX = (1 - t) * (1 - t) * x + 2 * (1 - t) * t * controlX + t * t * x;
+            float pointY = (1 - t) * (1 - t) * y + 2 * (1 - t) * t * controlY + t * t * (y - 30);
+            glVertex2f(pointX, pointY);
+        }
         glEnd();
 
     }
-
-    bool isHoldingText;
-    float y;
 };
 
 
@@ -390,8 +419,8 @@ void init() {
     for (int i = 0; i < 10; i++){
         balloons.push_back({static_cast<float>(rand() % WINDOW_WIDTH), -100,
                             static_cast<float>(rand()) / RAND_MAX,
-                            0.0,
-                            0.0});
+                            static_cast<float>(rand()) / RAND_MAX,
+                            static_cast<float>(rand()) / RAND_MAX});
     }
     for (int i = 0; i < 5; i++) {  // 例如，初始化5个烟花
         fireworks.push_back(Firework());
@@ -425,15 +454,15 @@ void display() {
             auto& balloon = balloons[i];
             balloon.draw();  // 使用Balloon类的draw方法绘制气球
 
-            if (balloon.isHoldingText) {  // 如果气球拉着字，使用固定速度
-                balloon.y += 2;
+            if (balloon.holdingText()) {  // 如果气球拉着字，使用固定速度
+                balloon.setY(balloon.getY() + 2);
             } else {
-                balloon.y += 1 + (rand() % 3);  // Random speed between 1 and 3
+                balloon.setY(balloon.getY() + 1 + (rand() % 3));  // Random speed between 1 and 3
             }
         }
 
-        if (balloons[0].y + bannerYOffset < 500) {
-            drawCenteredText(balloons[0].y + bannerYOffset + 15, "2024 XJTLU Graduation Ceremony");
+        if (balloons[0].getY() + bannerYOffset < 500) {
+            drawCenteredText(balloons[0].getY() + bannerYOffset + 15, "2024 XJTLU Graduation Ceremony");
         } else {
             drawCenteredText(515, "2024 XJTLU Graduation Ceremony");  // Centered on the building top
 
