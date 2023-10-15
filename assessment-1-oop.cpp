@@ -364,6 +364,126 @@ public:
     }
 };
 
+struct Star {
+    float x, y;  // 星星的位置
+    float brightness;  // 星星的亮度
+};
+struct Cloud {
+    float x, y;  // 云朵的位置
+    float width, height;  // 云朵的大小
+};
+class Sky {
+private:
+    float red, green, blue;
+    std::vector<Star> stars;
+    std::vector<Cloud> clouds;
+
+public:
+    Sky() : red(0.0), green(0.0), blue(0.5) {
+        initStars();
+        initClouds();
+    }
+
+    void darken() {
+        blue -= 0.005;  // 每次减少的量，可以根据需要调整
+        if (blue < 0.2) blue = 0.2;  // 设置最小值为偏蓝黑的黑色
+    }
+
+    float getColor() const {
+        return skyColor;
+    }
+
+    void draw() const {
+        for (const Star& star : stars) {
+            drawStar(star);
+        }
+
+        for (const Cloud& cloud : clouds) {
+            drawCloud(cloud);
+        }
+    }
+
+    float getRed() const {
+        return red;
+    }
+
+    float getGreen() const {
+        return green;
+    }
+
+    float getBlue() const {
+        return blue;
+    }
+
+    void updateClouds() {
+        for (auto& cloud : clouds) {
+            cloud.x -= 0.5;  // 平移速度，可以根据需要调整
+
+            // 如果云朵完全移出屏幕，生成一个新的云朵
+            if (cloud.x + cloud.width < 0) {
+                cloud.x = WINDOW_WIDTH;
+                cloud.y = static_cast<float>(rand() % (WINDOW_HEIGHT / 2) + (WINDOW_HEIGHT / 4));
+                cloud.width = 50 + static_cast<float>(rand() % 100);
+                cloud.height = 20 + static_cast<float>(rand() % 40);
+            }
+        }
+    }
+
+    void updateStars() {
+        for (auto& star : stars) {
+            star.brightness += (rand() % 3 - 1) * 0.05;  // 随机增加或减少亮度
+            if (star.brightness < 0) star.brightness = 0;
+            if (star.brightness > 1) star.brightness = 1;
+        }
+    }
+
+private:
+    void initStars() {
+        for (int i = 0; i < 100; i++) {  // 创建100颗星星
+            Star star = {
+                    static_cast<float>(rand() % WINDOW_WIDTH),
+                    static_cast<float>(rand() % (WINDOW_HEIGHT / 4) + (WINDOW_HEIGHT / 2)),  // 在屏幕的上四分之一到上四分之三之间创建星星
+                    static_cast<float>(rand()) / RAND_MAX  // 随机亮度
+            };
+            stars.push_back(star);
+        }
+    }
+
+    void initClouds() {
+        for (int i = 0; i < 5; i++) {  // 创建5朵云
+            Cloud cloud = {
+                    static_cast<float>(rand() % WINDOW_WIDTH),
+                    static_cast<float>(rand() % (WINDOW_HEIGHT / 2) + (WINDOW_HEIGHT / 4)),  // 在屏幕的上四分之一到上二分之一之间创建云朵
+                    50 + static_cast<float>(rand() % 100),  // 随机宽度
+                    20 + static_cast<float>(rand() % 40)  // 随机高度
+            };
+            clouds.push_back(cloud);
+        }
+    }
+
+    void drawStar(const Star& star) const {
+        glColor3f(star.brightness, star.brightness, star.brightness);
+        glBegin(GL_LINES);
+        glVertex2f(star.x, star.y - 2);
+        glVertex2f(star.x, star.y + 2);
+        glVertex2f(star.x - 2, star.y);
+        glVertex2f(star.x + 2, star.y);
+        glEnd();
+    }
+
+    void drawCloud(const Cloud& cloud) const{
+        glColor3f(0.9, 0.9, 0.9);  // 云朵的颜色
+        glBegin(GL_QUADS);
+        glVertex2f(cloud.x, cloud.y);
+        glVertex2f(cloud.x + cloud.width, cloud.y);
+        glVertex2f(cloud.x + cloud.width, cloud.y + cloud.height);
+        glVertex2f(cloud.x, cloud.y + cloud.height);
+        glEnd();
+    }
+
+};
+
+
 
 void drawBuilding() {
     // Main building
@@ -481,7 +601,7 @@ std::vector<Balloon> balloons;
 std::vector<Tree> trees;
 std::vector<Firework> fireworks;
 std::vector<Flower> flowers;
-
+Sky sky;
 void init() {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -500,19 +620,24 @@ void init() {
                             static_cast<float>(rand()) / RAND_MAX,
                             static_cast<float>(rand()) / RAND_MAX});
     }
-    for (int i = 0; i < 5; i++) {  // 例如，初始化5个烟花
+    //初始化烟花
+    for (int i = 0; i < 5; i++) {
         fireworks.push_back(Firework());
+    }
+    // 初始化花朵
+    for (int i = 0; i < 50; i++) {
+        flowers.push_back(Flower(static_cast<float>(rand() % WINDOW_WIDTH), static_cast<float>(rand() % 100)));
     }
 }
 
 void display() {
     if (fireworksStarted) {
-        skyColor -= 0.02;  // Gradually darken the sky
-        if (skyColor < 0.0) skyColor = 0.0;
+        sky.darken();
     }
-    glClearColor(skyColor, skyColor, skyColor, 1.0);
+    glClearColor(sky.getRed(), sky.getGreen(), sky.getBlue(), 1.0);
     glClear(GL_COLOR_BUFFER_BIT);
-//    std::cout << "Number of trees: " << trees.size() << std::endl;
+    sky.draw();
+
     drawGround();
     drawBuilding();
 
@@ -587,6 +712,12 @@ void timer(int) {
         }
     }
 
+    // 更新云朵的位置
+    sky.updateClouds();
+
+    // 更新星星的闪烁效果
+    sky.updateStars();
+
     // 更新烟花
     for (Firework& firework : fireworks) {
         firework.update();  // 使用Firework类的update方法更新烟花状态
@@ -630,15 +761,9 @@ int main(int argc, char** argv) {
     glutCreateWindow("XJTLU Graduation Ceremony Invitation Card");
 
     init();  // 初始化OpenGL和场景
-
     glutDisplayFunc(display);  // 设置显示回调函数
     glutMouseFunc(mouse);  // 设置鼠标回调函数
     glutTimerFunc(0, timer, 0);  // 设置定时器回调函数
-
-    // 初始化花朵
-    for (int i = 0; i < 50; i++) {
-        flowers.push_back(Flower(static_cast<float>(rand() % WINDOW_WIDTH), static_cast<float>(rand() % 100)));
-    }
 
     glutMainLoop();  // 进入主循环
     return 0;
