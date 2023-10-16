@@ -54,6 +54,18 @@ float bannerYOffset = -100;  // 初始牌子与气球的相对位置
 float zoomFactor = 1.0f;
 float targetX = WINDOW_WIDTH / 2;
 float targetY = WINDOW_HEIGHT / 2;
+char text[2000] = "XJTLU Graduation Ceremony 2024\n"
+                  "Dear All,\n"
+                  "    We are delighted to invite you to join us in celebrating the outstanding achievements of our graduating class at Xi'an Jiaotong-Liverpool University.\n"
+                  "\n"
+                  "Event Details:"
+                  "Details:\n"
+                  "Date: [June 10, 2024]\n"
+                  "Time: [10:00 AM]\n"
+                  "Venue: [XJTLU Central Auditorium]\n"
+                  "Please RSVP by [June 1, 2024].\n"
+                  "Warm Regards,\n"
+                  "Xi'an Jiaotong-Liverpool University";  // 信纸上的文字
 int frameCounter = 0;  // 计数器来跟踪经过的帧数
 bool windowsVisible = true;
 bool windowsActivated = false;
@@ -268,7 +280,7 @@ public:
 class Letter {
 public:
     float x, y; // 信纸的位置
-    float width = 100.0f, height = 150.0f; // 信纸的大小
+    float width = 200.0f, height = 300.0f; // 信纸的大小
     bool isVisible; // 是否可见
 
     Letter() {
@@ -283,23 +295,32 @@ public:
     }
 
     void drawText(const char* text) {
-        float textWidth = glutBitmapLength(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)text);
+        float textWidth = glutBitmapLength(GLUT_BITMAP_HELVETICA_10, (const unsigned char*)text);
         float textX = x - textWidth / 2;
-        float textY = y;
+        float textY = y + height / 2 - 20;
 
         glColor3f(0, 0, 0); // 设置文字颜色为黑色
         glRasterPos2f(textX, textY);
         for (const char* c = text; *c != '\0'; c++) {
-            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+            // 检查当前字符是否为换行符
+            if (*c == '\n') {
+                textY -= 20; // 根据字体大小调整换行的距离
+                textX = x - width / 2;
+                glRasterPos2f(textX, textY);
+                continue; // 跳过当前循环迭代，处理下一个字符
+            }
+
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, *c);
             // 如果文字宽度超过信纸的宽度，进行换行
-            if (textX + glutBitmapWidth(GLUT_BITMAP_HELVETICA_18, *c) > x + width / 2) {
+            if (textX + glutBitmapWidth(GLUT_BITMAP_HELVETICA_10, *c) > x + width / 2) {
                 textY -= 20; // 根据字体大小调整换行的距离
                 textX = x - width / 2;
                 glRasterPos2f(textX, textY);
             }
-            textX += glutBitmapWidth(GLUT_BITMAP_HELVETICA_18, *c);
+            textX += glutBitmapWidth(GLUT_BITMAP_HELVETICA_10, *c);
         }
     }
+
 
 
     void draw() {
@@ -686,6 +707,7 @@ private:
 
 
 void drawBuilding() {
+    //Todo 美化建筑物，纹理和细化，逻辑修改和贴图等
     // Main building
     glColor3f(0.6, 0.6, 0.6);
     glBegin(GL_QUADS);
@@ -842,6 +864,7 @@ void display() {
         sky.specialUpdateStars(specialBalloon.getY());
         glClearColor(sky.getRed(), sky.getGreen(), sky.getBlue(), 1.0);
         letter.draw();
+        letter.drawText(text);
         sky.draw();
         //绘制特殊气球
         if (specialBalloon.getY() < 900) {
