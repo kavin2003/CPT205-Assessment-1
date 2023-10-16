@@ -847,7 +847,7 @@ void display() {
         if (specialBalloon.getY() < 900) {
             specialBalloon.update();
             specialBalloon.draw();
-            specialBalloon.rise();
+//          specialBalloon.rise();
         }
         // 调整摄像机位置跟随气球上升
         if (specialBalloon.getY() < 700){
