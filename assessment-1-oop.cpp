@@ -263,7 +263,7 @@ public:
 };
 
 class Balloon {
-private:
+protected:
     float x,y;
     float speed;
     float r, g, b;
@@ -277,10 +277,20 @@ public:
         speed = isHoldingText ? 2.0f : 1.0f + static_cast<float>(rand() % 3);  // 如果拉着字，速度固定为2.0，否则随机速度
     }
 
+    Balloon() {
+        x = static_cast<float>(rand() % WINDOW_WIDTH);
+        y = -100;
+        r = static_cast<float>(rand()) / RAND_MAX;
+        g = static_cast<float>(rand()) / RAND_MAX;
+        b = static_cast<float>(rand()) / RAND_MAX;
+        isHoldingText = false;
+        speed = 1.0f + static_cast<float>(rand() % 3);  // 随机速度
+    }
+
     void update() {
         y += speed;
         windTime += 0.05f;  // 偏移程度
-        controlPointOffset = sin(windTime) * 5.0f;  // 调
+        controlPointOffset = sin(windTime) * 5.0f;  // 调风速
     }
 
     void setSpeed(float newSpeed) {
@@ -307,7 +317,7 @@ public:
         y = newY;
     }
 
-    void draw() {
+    virtual void draw() {
         if (!isHoldingText == true) {
             //绘制弯曲的绳子
             glColor3f(0.5, 0.5, 0.5);  // 灰色
@@ -363,6 +373,83 @@ public:
 
     }
 };
+class SpecialBalloon : public Balloon {
+protected:
+    float speed =0.5;
+public:
+    bool isActive;
+
+    SpecialBalloon() : Balloon() {
+        x = WINDOW_WIDTH/2;  // 屏幕中央
+        y = 0.0f;  // 屏幕中央
+        r = 1.0f;  // 红色
+        g = 0.0f;
+        b = 0.0f;
+    }
+
+    void rise() {
+        if (isActive) {
+            y += speed; // 气球上升
+        }
+    }
+
+    void activate() {
+        isActive = true; // 激活气球
+    }
+
+    void update() {
+        y += speed;
+        windTime += 0.1f;  // 偏移程度
+        controlPointOffset = sin(windTime) * 5.0f;  // 调风速
+    }
+
+    virtual void draw() override {
+        //绘制弯曲的绳子
+        glColor3f(0.5, 0.5, 0.5);  // 灰色
+        float controlX = x + controlPointOffset;
+        float controlY = y - 80;  // 控制点
+
+        glBegin(GL_LINE_STRIP);  // 使用GL_LINE_STRIP来绘制连续的线段
+        glVertex2f(x, y);  // 起点
+        // 使用贝塞尔曲线的公式来绘制曲线
+        for (float t = 0; t <= 1; t += 0.01) {
+            float pointX = (1 - t) * (1 - t) * x + 2 * (1 - t) * t * controlX + t * t * x;
+            float pointY = (1 - t) * (1 - t) * y + 2 * (1 - t) * t * controlY + t * t * (y - 200);
+            glVertex2f(pointX, pointY);
+        }
+        glEnd();
+        glColor3f(1.0, 0.0, 0.0);  // 红色
+        float balloonRadiusX = 60.0f;  // 特殊气球的X轴半径
+        float balloonRadiusY = 90.0f;  // 特殊气球的Y轴半径
+        glBegin(GL_POLYGON);
+        for (int i = 0; i < 360; i += 10) {
+            float degInRad = i * 3.14159 / 180;
+            glVertex2f(x + cos(degInRad) * balloonRadiusX, y + sin(degInRad) * balloonRadiusY);  // 椭圆形的气球
+        }
+        glEnd();
+
+
+        // 绘制高光
+        float highlightWidth = 30.0f;  // 高光的宽度
+        float highlightHeight = 15.0f;  // 高光的高度
+        float highlightX = x;  // 高光X
+        float highlightY = y + 45.0f;  // 高光Y
+
+        glBegin(GL_TRIANGLE_FAN);
+        glColor4f(1.0f, 1.0f, 1.0f, 0.6f);  // 高光颜色
+        glVertex2f(highlightX, highlightY);  // 高光中心点
+        for (int i = 0; i <= 360; i += 10) {  // 高光的边缘
+            glColor4f(1.0f, 1.0f, 1.0f, 0.0f);  // 高光的边缘颜色
+            float degInRad = i * 3.14159 / 180;
+            glVertex2f(highlightX + cos(degInRad) * highlightWidth, highlightY + sin(degInRad) * highlightHeight);
+        }
+        glEnd();
+    }
+
+
+
+};
+
 
 struct Star {
     float x, y;  // 星星的位置
@@ -437,12 +524,44 @@ public:
         }
     }
 
+    void specialUpdateClouds(float balloonY) {
+        float cloudYLimit = WINDOW_HEIGHT - (balloonY / 2);  // 根据气球的高度调整云朵的上限
+
+        for (auto& cloud : clouds) {
+            cloud.x -= 0.5;  // 平移速度，可以根据需要调整
+
+            // 如果云朵完全移出屏幕，生成一个新的云朵
+            if (cloud.x + cloud.width < 0) {
+                cloud.x = WINDOW_WIDTH;
+                cloud.y = static_cast<float>(rand() % static_cast<int>(cloudYLimit));
+                cloud.width = 50 + static_cast<float>(rand() % 100);
+                cloud.height = 20 + static_cast<float>(rand() % 40);
+            }
+        }
+    }
+
+    void specialUpdateStars(float balloonY) {
+        float starYLimit = WINDOW_HEIGHT - (balloonY / 3);  // 根据气球的高度调整星星的上限
+
+        for (auto& star : stars) {
+            star.brightness += (rand() % 3 - 1) * 0.05;  // 随机增加或减少亮度
+            if (star.brightness < 0) star.brightness = 0;
+            if (star.brightness > 1) star.brightness = 1;
+
+            // 确保星星始终在指定的上限范围内
+            if (star.y > starYLimit) {
+                star.y = static_cast<float>(rand() % static_cast<int>(starYLimit));
+            }
+        }
+    }
+
+
 private:
     void initStars() {
         for (int i = 0; i < 100; i++) {  // 创建100颗星星
             Star star = {
                     static_cast<float>(rand() % WINDOW_WIDTH),
-                    static_cast<float>(rand() % (WINDOW_HEIGHT / 4) + (WINDOW_HEIGHT / 2)),  // 在屏幕的上四分之一到上四分之三之间创建星星
+                    static_cast<float>(rand() % (WINDOW_HEIGHT / 2) + (WINDOW_HEIGHT / 2)),  // 在屏幕的上四分之一到上四分之三之间创建星星
                     static_cast<float>(rand()) / RAND_MAX  // 随机亮度
             };
             stars.push_back(star);
@@ -481,6 +600,51 @@ private:
         glEnd();
     }
 
+};
+
+class Letter {
+public:
+    float x, y; // 信纸的位置
+    float width, height; // 信纸的大小
+    bool isVisible; // 是否可见
+
+    Letter() {
+        x = WINDOW_WIDTH / 2; // 初始位置为屏幕中央
+        y = -200; // 初始位置在屏幕上方，确保开始时不可见
+        width = 100;
+        height = 150;
+        isVisible = false;
+    }
+
+    void display() {
+        if (isVisible) {
+            glColor3f(1.0, 1.0, 1.0); // 设置信纸颜色为白色
+            glBegin(GL_QUADS);
+            glVertex2f(x - width / 2, y - height / 2);
+            glVertex2f(x + width / 2, y - height / 2);
+            glVertex2f(x + width / 2, y + height / 2);
+            glVertex2f(x - width / 2, y + height / 2);
+            glEnd();
+
+            // 添加更多的细节，例如信纸的纹理、折痕等
+            drawDetails();
+        }
+    }
+
+    void drawDetails() {
+        // 作为示例，我们可以绘制一些线条来表示信纸的纹理
+        glColor3f(0.8, 0.8, 0.8); // 设置线条颜色为浅灰色
+        for (float i = y - height / 2 + 10; i < y + height / 2; i += 10) {
+            glBegin(GL_LINES);
+            glVertex2f(x - width / 2 + 10, i);
+            glVertex2f(x + width / 2 - 10, i);
+            glEnd();
+        }
+    }
+
+    void show() {
+        isVisible = true;
+    }
 };
 
 
@@ -602,6 +766,8 @@ std::vector<Tree> trees;
 std::vector<Firework> fireworks;
 std::vector<Flower> flowers;
 Sky sky;
+SpecialBalloon specialBalloon;
+
 void init() {
     glMatrixMode(GL_PROJECTION);
     glLoadIdentity();
@@ -631,66 +797,93 @@ void init() {
 }
 
 void display() {
-    // 更新云朵的位置
-    sky.updateClouds();
-    // 更新星星的位置
-    sky.updateStars();
-    if (fireworksStarted) {
-        sky.darken();
-    }
-    glClearColor(sky.getRed(), sky.getGreen(), sky.getBlue(), 1.0);
-    glClear(GL_COLOR_BUFFER_BIT);
-    sky.draw();
+    glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+    glPushMatrix();
 
-    drawGround();
-    drawBuilding();
+    // 如果特殊气球是活跃的
+    if (specialBalloon.isActive) {
+        sky.specialUpdateClouds(specialBalloon.getY());
+        sky.specialUpdateStars(specialBalloon.getY());
+        glClearColor(sky.getRed(), sky.getGreen(), sky.getBlue(), 1.0);
+        sky.draw();
+        specialBalloon.update();
+        specialBalloon.draw();
+        // 调整摄像机位置跟随气球上升
+        glTranslatef(0.0, -specialBalloon.getY(), 0.0);
+        // 绘制特殊气球
+        specialBalloon.rise();
+        drawGround();
+        drawBuilding();
 
-    // 绘制花朵
-    for (Flower& flower : flowers) {
-        flower.update();
-        flower.draw();
-    }
-    // 绘制树
-    for (const Tree& tree : trees)
-    {
-        tree.draw();
-    }
-
-    for (Balloon& balloon : balloons) {
-        balloon.update();
-    }
-    if (balloonsFlying) {
-        for (int i = 0; i < balloons.size(); i++) {
-            auto& balloon = balloons[i];
-            balloon.draw();  // 使用Balloon类的draw方法绘制气球
-
-            if (balloon.holdingText()) {  // 如果气球拉着字，使用固定速度
-                balloon.setY(balloon.getY() + 2);
-            } else {
-                balloon.setY(balloon.getY() + 1 + (rand() % 3));  // Random speed between 1 and 3
-            }
+        // 绘制花朵
+        for (Flower& flower : flowers) {
+            flower.update();
+            flower.draw();
         }
+        // 绘制树
+        for (const Tree& tree : trees) {
+            tree.draw();
+        }
+    } else {
+        // 更新云朵的位置
+        sky.updateClouds();
+        // 更新星星的位置
+        sky.updateStars();
+        if (fireworksStarted) {
+            sky.darken();
+        }
+        glClearColor(sky.getRed(), sky.getGreen(), sky.getBlue(), 1.0);
+        sky.draw();
+        drawGround();
+        drawBuilding();
 
-        if (balloons[0].getY() + bannerYOffset < 500) {
-            drawCenteredText(balloons[0].getY() + bannerYOffset + 15, "2024 XJTLU Graduation Ceremony");
-        } else {
-            drawCenteredText(515, "2024 XJTLU Graduation Ceremony");  // Centered on the building top
+        // 绘制花朵
+        for (Flower& flower : flowers) {
+            flower.update();
+            flower.draw();
+        }
+        // 绘制树
+        for (const Tree& tree : trees) {
+            tree.draw();
+        }
+        for (Balloon& balloon : balloons) {
+            balloon.update();
+        }
+        if (balloonsFlying) {
+            for (int i = 0; i < balloons.size(); i++) {
+                auto& balloon = balloons[i];
+                balloon.draw();  // 使用Balloon类的draw方法绘制气球
 
-            if (!fireworksStarted) {
-                fireworksStarted = true;
+                if (balloon.holdingText()) {  // 如果气球拉着字，使用固定速度
+                    balloon.setY(balloon.getY() + 2);
+                } else {
+                    balloon.setY(balloon.getY() + 1 + (rand() % 3));  // Random speed between 1 and 3
+                }
             }
-            if (fireworksStarted) {
-                glEnable(GL_BLEND);  // 启用混合
-                glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // 设置混合模式
-                for (Firework& firework : fireworks) {
-                    firework.update();  // 更新烟花的状态
-                    firework.draw();
+
+            if (balloons[0].getY() + bannerYOffset < 500) {
+                drawCenteredText(balloons[0].getY() + bannerYOffset + 15, "2024 XJTLU Graduation Ceremony");
+            } else {
+                drawCenteredText(515, "2024 XJTLU Graduation Ceremony");  // Centered on the building top
+
+                if (!fireworksStarted) {
+                    fireworksStarted = true;
+                }
+                if (fireworksStarted) {
+                    glEnable(GL_BLEND);  // 启用混合
+                    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);  // 设置混合模式
+                    for (Firework& firework : fireworks) {
+                        firework.update();  // 更新烟花的状态
+                        firework.draw();
+                    }
                 }
             }
         }
+
+        drawInvitationButton();
     }
 
-    drawInvitationButton();
+    glPopMatrix();
     glutSwapBuffers();
 }
 
@@ -738,6 +931,8 @@ void timer(int) {
 
 void mouse(int button, int state, int x, int y) {
     if (button == GLUT_LEFT_BUTTON && state == GLUT_DOWN && !timerStarted == true) {
+        float glX = (float)x / (float)WINDOW_WIDTH * 2.0 - 1.0;
+        float glY = 1.0 - (float)y / (float)WINDOW_HEIGHT * 2.0;
         timerStarted = true;
         glutTimerFunc(0, timer, 0);
         balloonsFlying = true;
@@ -747,6 +942,11 @@ void mouse(int button, int state, int x, int y) {
         }
     }
     glutPostRedisplay();
+    if (button == GLUT_RIGHT_BUTTON && state == GLUT_DOWN)
+    {
+        specialBalloon.activate();
+    }
+
 }
 
 
