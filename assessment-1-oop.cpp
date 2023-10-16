@@ -262,6 +262,73 @@ public:
     }
 };
 
+class Letter {
+public:
+    float x, y; // 信纸的位置
+    float width = 100.0f, height = 150.0f; // 信纸的大小
+    bool isVisible; // 是否可见
+
+    Letter() {
+        x = WINDOW_WIDTH / 2; // 初始位置为屏幕中央
+        y = 0; // 初始位置在屏幕上方，确保开始时不可见
+        isVisible = false;
+    }
+
+    void setPosition(float newX, float newY){
+        x = newX;
+        y = newY;
+    }
+
+    void drawText(const char* text) {
+        float textWidth = glutBitmapLength(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)text);
+        float textX = x - textWidth / 2;
+        float textY = y;
+
+        glColor3f(0, 0, 0); // 设置文字颜色为黑色
+        glRasterPos2f(textX, textY);
+        for (const char* c = text; *c != '\0'; c++) {
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+            // 如果文字宽度超过信纸的宽度，进行换行
+            if (textX + glutBitmapWidth(GLUT_BITMAP_HELVETICA_18, *c) > x + width / 2) {
+                textY -= 20; // 根据字体大小调整换行的距离
+                textX = x - width / 2;
+                glRasterPos2f(textX, textY);
+            }
+            textX += glutBitmapWidth(GLUT_BITMAP_HELVETICA_18, *c);
+        }
+    }
+
+
+    void draw() {
+        if (isVisible) {
+            glColor3f(1.0, 1.0, 1.0); // 设置信纸颜色为白色
+            glBegin(GL_QUADS);
+            glVertex2f(x - width / 2, y - height / 2);
+            glVertex2f(x + width / 2, y - height / 2);
+            glVertex2f(x + width / 2, y + height / 2);
+            glVertex2f(x - width / 2, y + height / 2);
+            glEnd();
+            drawDetails();
+        }
+    }
+
+    void drawDetails() {
+        //TODO 绘制信纸的细节
+        glColor3f(0.8, 0.8, 0.8); // 设置线条颜色为浅灰色
+        for (float i = y - height / 2 + 10; i < y + height / 2; i += 10) {
+            glBegin(GL_LINES);
+            glVertex2f(x - width / 2 + 10, i);
+            glVertex2f(x + width / 2 - 10, i);
+            glEnd();
+        }
+    }
+
+    void show() {
+        isVisible = true;
+    }
+};
+Letter letter;
+
 class Balloon {
 protected:
     float x,y;
@@ -390,10 +457,6 @@ public:
     void rise() {
         if (isActive) {
             y += speed;// 气球上升
-            if (y >=700)
-            {
-                y = 700;
-            }
         }
     }
 
@@ -422,6 +485,7 @@ public:
             glVertex2f(pointX, pointY);
         }
         glEnd();
+
         glColor3f(1.0, 0.0, 0.0);  // 红色
         float balloonRadiusX = 60.0f;  // 特殊气球的X轴半径
         float balloonRadiusY = 90.0f;  // 特殊气球的Y轴半径
@@ -431,7 +495,6 @@ public:
             glVertex2f(x + cos(degInRad) * balloonRadiusX, y + sin(degInRad) * balloonRadiusY);  // 椭圆形的气球
         }
         glEnd();
-
 
         // 绘制高光
         float highlightWidth = 30.0f;  // 高光的宽度
@@ -448,9 +511,21 @@ public:
             glVertex2f(highlightX + cos(degInRad) * highlightWidth, highlightY + sin(degInRad) * highlightHeight);
         }
         glEnd();
+
+        if (y >=200) {
+            if (letter.y >= WINDOW_HEIGHT / 2) {
+                letter.y = WINDOW_HEIGHT / 2;  // 保持信纸在屏幕中心
+            } else {
+                // 更新信纸的位置
+                float letterX = x;
+                float letterY = y - 250;  // 信纸位于绳子的末端
+                letter.setPosition(letterX, letterY);
+            }
+        }
+        letter.show();
+
     }
 };
-
 
 struct Star {
     float x, y;  // 星星的位置
@@ -603,70 +678,6 @@ private:
 
 };
 
-class Letter {
-public:
-    float x, y; // 信纸的位置
-    float width, height; // 信纸的大小
-    bool isVisible; // 是否可见
-
-    Letter() {
-        x = WINDOW_WIDTH / 2; // 初始位置为屏幕中央
-        y = -200; // 初始位置在屏幕上方，确保开始时不可见
-        width = 100;
-        height = 150;
-        isVisible = false;
-    }
-
-    void drawText(const char* text) {
-        float textWidth = glutBitmapLength(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)text);
-        float textX = x - textWidth / 2;
-        float textY = y;
-
-        glColor3f(0, 0, 0); // 设置文字颜色为黑色
-        glRasterPos2f(textX, textY);
-        for (const char* c = text; *c != '\0'; c++) {
-            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
-            // 如果文字宽度超过信纸的宽度，进行换行
-            if (textX + glutBitmapWidth(GLUT_BITMAP_HELVETICA_18, *c) > x + width / 2) {
-                textY -= 20; // 根据字体大小调整换行的距离
-                textX = x - width / 2;
-                glRasterPos2f(textX, textY);
-            }
-            textX += glutBitmapWidth(GLUT_BITMAP_HELVETICA_18, *c);
-        }
-    }
-
-
-    void draw() {
-        if (isVisible) {
-            glColor3f(1.0, 1.0, 1.0); // 设置信纸颜色为白色
-            glBegin(GL_QUADS);
-            glVertex2f(x - width / 2, y - height / 2);
-            glVertex2f(x + width / 2, y - height / 2);
-            glVertex2f(x + width / 2, y + height / 2);
-            glVertex2f(x - width / 2, y + height / 2);
-            glEnd();
-
-            // 添加更多的细节，例如信纸的纹理、折痕等
-            drawDetails();
-        }
-    }
-
-    void drawDetails() {
-        // 作为示例，我们可以绘制一些线条来表示信纸的纹理
-        glColor3f(0.8, 0.8, 0.8); // 设置线条颜色为浅灰色
-        for (float i = y - height / 2 + 10; i < y + height / 2; i += 10) {
-            glBegin(GL_LINES);
-            glVertex2f(x - width / 2 + 10, i);
-            glVertex2f(x + width / 2 - 10, i);
-            glEnd();
-        }
-    }
-
-    void show() {
-        isVisible = true;
-    }
-};
 
 
 
@@ -789,7 +800,6 @@ std::vector<Firework> fireworks;
 std::vector<Flower> flowers;
 Sky sky;
 SpecialBalloon specialBalloon;
-Letter letter;
 
 void init() {
     glMatrixMode(GL_PROJECTION);
@@ -828,13 +838,20 @@ void display() {
         sky.specialUpdateClouds(specialBalloon.getY());
         sky.specialUpdateStars(specialBalloon.getY());
         glClearColor(sky.getRed(), sky.getGreen(), sky.getBlue(), 1.0);
+        letter.draw();
         sky.draw();
-        specialBalloon.update();
-        specialBalloon.draw();
+        //绘制特殊气球
+        if (specialBalloon.getY() < 900) {
+            specialBalloon.update();
+            specialBalloon.draw();
+            specialBalloon.rise();
+        }
         // 调整摄像机位置跟随气球上升
-        glTranslatef(0.0, -specialBalloon.getY(), 0.0);
-        // 绘制特殊气球
-        specialBalloon.rise();
+        if (specialBalloon.getY() < 700){
+            glTranslatef(0.0, -specialBalloon.getY(), 0.0);
+        } else {
+            glTranslatef(0.0, -700, 0.0);
+        }
         drawGround();
         drawBuilding();
         // 绘制花朵
@@ -846,7 +863,6 @@ void display() {
         for (const Tree& tree : trees) {
             tree.draw();
         }
-        letter.draw();
     } else {
         // 更新云朵的位置
         sky.updateClouds();
