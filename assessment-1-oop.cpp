@@ -389,7 +389,11 @@ public:
 
     void rise() {
         if (isActive) {
-            y += speed; // 气球上升
+            y += speed;// 气球上升
+            if (y >=700)
+            {
+                y = 700;
+            }
         }
     }
 
@@ -445,9 +449,6 @@ public:
         }
         glEnd();
     }
-
-
-
 };
 
 
@@ -616,7 +617,27 @@ public:
         isVisible = false;
     }
 
-    void display() {
+    void drawText(const char* text) {
+        float textWidth = glutBitmapLength(GLUT_BITMAP_HELVETICA_18, (const unsigned char*)text);
+        float textX = x - textWidth / 2;
+        float textY = y;
+
+        glColor3f(0, 0, 0); // 设置文字颜色为黑色
+        glRasterPos2f(textX, textY);
+        for (const char* c = text; *c != '\0'; c++) {
+            glutBitmapCharacter(GLUT_BITMAP_HELVETICA_18, *c);
+            // 如果文字宽度超过信纸的宽度，进行换行
+            if (textX + glutBitmapWidth(GLUT_BITMAP_HELVETICA_18, *c) > x + width / 2) {
+                textY -= 20; // 根据字体大小调整换行的距离
+                textX = x - width / 2;
+                glRasterPos2f(textX, textY);
+            }
+            textX += glutBitmapWidth(GLUT_BITMAP_HELVETICA_18, *c);
+        }
+    }
+
+
+    void draw() {
         if (isVisible) {
             glColor3f(1.0, 1.0, 1.0); // 设置信纸颜色为白色
             glBegin(GL_QUADS);
@@ -646,6 +667,7 @@ public:
         isVisible = true;
     }
 };
+
 
 
 
@@ -767,6 +789,7 @@ std::vector<Firework> fireworks;
 std::vector<Flower> flowers;
 Sky sky;
 SpecialBalloon specialBalloon;
+Letter letter;
 
 void init() {
     glMatrixMode(GL_PROJECTION);
@@ -814,7 +837,6 @@ void display() {
         specialBalloon.rise();
         drawGround();
         drawBuilding();
-
         // 绘制花朵
         for (Flower& flower : flowers) {
             flower.update();
@@ -824,6 +846,7 @@ void display() {
         for (const Tree& tree : trees) {
             tree.draw();
         }
+        letter.draw();
     } else {
         // 更新云朵的位置
         sky.updateClouds();
