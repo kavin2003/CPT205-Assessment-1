@@ -7,46 +7,49 @@
 #include <sstream>
 #define DEG2RAD 0.0174532925
 
-GLuint loadPPMTexture(const char* filename) {
-    std::ifstream file(filename, std::ios::binary);
-    if (!file.is_open()) {
-        std::cerr << "Failed to open PPM file: " << filename << std::endl;
-        return 0;
-    }
+//GLuint loadPPMTexture(const char* filename) {
+//    std::ifstream file(filename, std::ios::binary);
+//    if (!file.is_open()) {
+//        std::cerr << "Failed to open PPM file: " << filename << std::endl;
+//        return 0;
+//    }
+//
+//    std::string line;
+//    std::getline(file, line);  // P6
+//    if (line != "P6") {
+//        std::cerr << "Not a valid PPM file: " << filename << std::endl;
+//        return 0;
+//    }
+//
+//    // Skip comments
+//    while (std::getline(file, line) && line[0] == '#');
+//
+//    std::stringstream dimensions(line);
+//    int width, height;
+//    dimensions >> width >> height;
+//
+//    std::getline(file, line);  // Max color value, usually 255
+//    int maxColor = std::stoi(line);
+//
+//    std::vector<unsigned char> data(width * height * 3);
+//    file.read(reinterpret_cast<char*>(data.data()), data.size());
+//
+//    GLuint textureID;
+//    glGenTextures(1, &textureID);
+//    glBindTexture(GL_TEXTURE_2D, textureID);
+//
+//    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data.data());
+//
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+//    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+//
+//    glBindTexture(GL_TEXTURE_2D, 0);
+//
+//    return textureID;
+//} did not use
 
-    std::string line;
-    std::getline(file, line);  // P6
-    if (line != "P6") {
-        std::cerr << "Not a valid PPM file: " << filename << std::endl;
-        return 0;
-    }
 
-    // Skip comments
-    while (std::getline(file, line) && line[0] == '#');
 
-    std::stringstream dimensions(line);
-    int width, height;
-    dimensions >> width >> height;
-
-    std::getline(file, line);  // Max color value, usually 255
-    int maxColor = std::stoi(line);
-
-    std::vector<unsigned char> data(width * height * 3);
-    file.read(reinterpret_cast<char*>(data.data()), data.size());
-
-    GLuint textureID;
-    glGenTextures(1, &textureID);
-    glBindTexture(GL_TEXTURE_2D, textureID);
-
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, width, height, 0, GL_RGB, GL_UNSIGNED_BYTE, data.data());
-
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-
-    glBindTexture(GL_TEXTURE_2D, 0);
-
-    return textureID;
-}
 const int WINDOW_WIDTH = 600;
 const int WINDOW_HEIGHT = 800;
 float skyColor = 0.4;  // 初始化浅蓝色天空
@@ -66,7 +69,7 @@ char text[2000] = "XJTLU Graduation Ceremony 2024\n"
                   "Please RSVP by [June 1, 2024].\n"
                   "Warm Regards,\n"
                   "Xi'an Jiaotong-Liverpool University";  // 信纸上的文字
-int frameCounter = 0;  // 计数器来跟踪经过的帧数
+int frameCounter = 0;  // 计数器:帧数
 bool windowsVisible = true;
 bool windowsActivated = false;
 //bool flowersDrawn = false;
@@ -76,10 +79,10 @@ bool timerStarted = false;
 
 
 struct Particle {
-    float x, y;  // 粒子的位置
-    float vx, vy;  // 粒子的速度
-    float life;  // 粒子的生命周期
-    float r, g, b;  // 粒子的颜色
+    float x, y;  // 粒子位置
+    float vx, vy;  // 粒子速度
+    float life;  // 粒子生命周期
+    float r, g, b;  // 粒子颜色
 };
 class Firework {
 private:
@@ -285,7 +288,7 @@ public:
 
     Letter() {
         x = WINDOW_WIDTH / 2; // 初始位置为屏幕中央
-        y = 0; // 初始位置在屏幕上方，确保开始时不可见
+        y = 0; // 确保开始时不可见
         isVisible = false;
     }
 
@@ -299,21 +302,22 @@ public:
         float textX = x - textWidth / 2;
         float textY = y + height / 2 - 20;
 
-        glColor3f(0, 0, 0); // 设置文字颜色为黑色
+        glColor3f(0, 0, 0); // 字:黑色
         glRasterPos2f(textX, textY);
+        //处理换行
         for (const char* c = text; *c != '\0'; c++) {
             // 检查当前字符是否为换行符
             if (*c == '\n') {
                 textY -= 20; // 根据字体大小调整换行的距离
                 textX = x - width / 2;
                 glRasterPos2f(textX, textY);
-                continue; // 跳过当前循环迭代，处理下一个字符
+                continue;
             }
 
             glutBitmapCharacter(GLUT_BITMAP_HELVETICA_10, *c);
-            // 如果文字宽度超过信纸的宽度，进行换行
+            // 文字宽度超过信纸的宽度，进行换行
             if (textX + glutBitmapWidth(GLUT_BITMAP_HELVETICA_10, *c) > x + width / 2) {
-                textY -= 20; // 根据字体大小调整换行的距离
+                textY -= 20;
                 textX = x - width / 2;
                 glRasterPos2f(textX, textY);
             }
@@ -375,7 +379,7 @@ public:
         g = static_cast<float>(rand()) / RAND_MAX;
         b = static_cast<float>(rand()) / RAND_MAX;
         isHoldingText = false;
-        speed = 1.0f + static_cast<float>(rand() % 3);  // 随机速度
+        speed = 2.0f + static_cast<float>(rand() % 3);  // 随机速度
     }
 
     void update() {
@@ -705,9 +709,8 @@ private:
 
 
 
-
+//Todo 美化建筑物，纹理和细化，逻辑修改和贴图等
 void drawBuilding() {
-    //Todo 美化建筑物，纹理和细化，逻辑修改和贴图等
     // Main building
     glColor3f(0.6, 0.6, 0.6);
     glBegin(GL_QUADS);
@@ -721,7 +724,7 @@ void drawBuilding() {
     for (int i = 160; i < 440; i += 60) {
         for (int j = 120; j < 480; j += 60) {
             if (windowsActivated && i == 280 && j != 180 && windowsVisible) {  // 仅当windowsVisible为true时绘制黄色窗户
-                glColor3f(1.0, 1.0, 0.0);  // Yellow for activated windows
+                glColor3f(1.0, 1.0, 0.0);  // Yellow
             } else {
                 glColor3f(0.3, 0.3, 0.3);
             }
@@ -811,7 +814,6 @@ void drawInvitationButton() {
     glVertex2i(200, 100);
     glEnd();
 
-    // Vertical "Invitation" text
     const char* text = "You Have an";
     int yStart = 70;
     drawArtisticText(250, yStart, text);
@@ -832,12 +834,12 @@ void init() {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     gluOrtho2D(0, WINDOW_WIDTH, 0, WINDOW_HEIGHT);
-
+    //两颗树
     trees.push_back(Tree(100, 100));
     trees.push_back(Tree(500, 100));
-    // Initialize balloons with random positions and bright colors
-    balloons.push_back(Balloon(250, -100, 1.0, 0.0, 0.0, true));  // Left balloon (bright red)
-    balloons.push_back(Balloon(350, -100, 1.0, 0.0, 0.0, true));  // Right balloon (bright red)
+    // 初始化气球的位置
+    balloons.push_back(Balloon(250, -100, 1.0, 0.0, 0.0, true));
+    balloons.push_back(Balloon(350, -100, 1.0, 0.0, 0.0, true));
     for (int i = 0; i < 20; i++){
         balloons.push_back({static_cast<float>(rand() % WINDOW_WIDTH), -100,
                             static_cast<float>(rand()) / RAND_MAX,
@@ -872,7 +874,7 @@ void display() {
             specialBalloon.draw();
 //          specialBalloon.rise();
         }
-        // 调整摄像机位置跟随气球上升
+        // 摄像机跟随气球上升
         if (specialBalloon.getY() < 700){
             glTranslatef(0.0, -specialBalloon.getY(), 0.0);
         } else {
@@ -966,7 +968,7 @@ void timer(int) {
                 balloon.setY(-100);  // 使气球从屏幕底部重新出现
                 balloon.setColor(static_cast<float>(rand()) / RAND_MAX,
                                  static_cast<float>(rand()) / RAND_MAX,
-                                 static_cast<float>(rand()) / RAND_MAX);  // 设置随机颜色
+                                 static_cast<float>(rand()) / RAND_MAX);  // 随机颜色
             } else {
                 // 如果气球拉着字并且到达屋顶，停止上升
                 balloon.setSpeed(0);
@@ -976,11 +978,11 @@ void timer(int) {
 
     // 更新烟花
     for (Firework& firework : fireworks) {
-        firework.update();  // 使用Firework类的update方法更新烟花状态
+        firework.update();  // 更新烟花状态
 
         // 如果烟花完全淡出，重新初始化
-        if (firework.isFadedOut()) {  //使用Firework类的isFadedOut方法来检查烟花是否已经完全淡出
-            firework.init();  // 使用Firework类的init方法重新初始化烟花
+        if (firework.isFadedOut()) {  //检查烟花是否已经完全淡出
+            firework.init();  // 重新初始化烟花
         }
     }
 
@@ -1021,11 +1023,11 @@ int main(int argc, char** argv) {
     glutInitWindowSize(WINDOW_WIDTH, WINDOW_HEIGHT);
     glutCreateWindow("XJTLU Graduation Ceremony Invitation Card");
 
-    init();  // 初始化OpenGL和场景
-    glutDisplayFunc(display);  // 设置显示回调函数
-    glutMouseFunc(mouse);  // 设置鼠标回调函数
-    glutTimerFunc(0, timer, 0);  // 设置定时器回调函数
+    init();
+    glutDisplayFunc(display);
+    glutMouseFunc(mouse);
+    glutTimerFunc(0, timer, 0);
 
-    glutMainLoop();  // 进入主循环
+    glutMainLoop();
     return 0;
 }
